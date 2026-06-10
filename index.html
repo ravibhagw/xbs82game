@@ -405,6 +405,10 @@
   </div>
 </div>
 
+<footer style="text-align:center;padding:24px 0 32px;font-size:0.72rem;color:#2a3d5a;">
+  <strong style="color:#3a5a7a;">Updates</strong> — Adjusted probabilities and game sim randomness
+</footer>
+
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 
@@ -696,7 +700,7 @@ function simulateSeason(r, games = 82) {
   const winProb = Math.max(0, Math.min(1, base + mod));
   let wins = 0;
   for (let g = 0; g < games; g++) {
-    const gameProb = Math.max(0, Math.min(1, winProb + randn() * 0.05));
+    const gameProb = Math.max(0, Math.min(1, winProb + randn() * 0.020));
     if (Math.random() < gameProb) wins++;
   }
   return { wins, losses: games - wins, winProb, base, mod, perfect: wins === games };
@@ -814,11 +818,6 @@ function buildAnalysis(result) {
   }
   if (hasPowerFwd && bothPhysicalD) {
     items.push({ type: 'negative', icon: '⚠️', text: '<strong>Power Forward + two Physical defensemen.</strong> Too much muscle, not enough skill. The power game works better when backed by offensive D.' });
-  }
-
-  // Weakest link — position-level, no names
-  if (weakestP && weakestP.score < 70) {
-    items.push({ type: 'negative', icon: '🔴', text: `<strong>Your ${weakestSlot.label} was a weak spot.</strong> A below-average contributor at ${weakestSlot.label} creates a liability the rest of the team has to compensate for.` });
   }
 
   // Team depth context

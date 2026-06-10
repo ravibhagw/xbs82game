@@ -81,8 +81,8 @@ function simulateSeason(roster, games = 82) {
         return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
     }
 
-    // Game-level noise: ~5% std dev so good teams can lose on a bad night
-    const GAME_NOISE_STD = 0.05;
+    // Game-level noise: ~2% std dev so good teams can lose on a bad night
+    const GAME_NOISE_STD = 0.020;
 
     let wins = 0;
     const gameLog = [];
