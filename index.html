@@ -658,9 +658,9 @@ function baseWinProbability(r) {
   for (const [slot, weight] of Object.entries(SLOT_WEIGHTS)) {
     const p = r[slot];
     if (!p) return 0;
-    total += (Math.min(p.score, SCORE_CAP) / SCORE_CAP) * weight;
+    total += (Math.min(p.score, SCORE_CAP) / 100) * weight;
   }
-  return total;
+  return Math.min(total, 1.0);
 }
 
 function compositionModifier(r) {

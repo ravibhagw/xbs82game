@@ -25,9 +25,11 @@ function baseWinProbability(roster) {
     for (const [slot, weight] of Object.entries(SLOT_WEIGHTS)) {
         const p = roster[slot];
         if (!p) return 0; // incomplete roster
-        total += (Math.min(p.score, SCORE_CAP) / SCORE_CAP) * weight;
+        // Normalize by 100 so scores above 100 contribute above baseline.
+        // A 120-rated player gives 1.2x their slot weight — generational talent matters.
+        total += (Math.min(p.score, SCORE_CAP) / 100) * weight;
     }
-    return total; // 0–1
+    return Math.min(total, 1.0);
 }
 
 function compositionModifier(roster) {
