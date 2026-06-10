@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XBS82 — Build Your Superteam</title>
+
+<!-- Open Graph / Discord embed -->
+<meta property="og:type"        content="website">
+<meta property="og:title"       content="XBS82 — Can you go 82-0?">
+<meta property="og:description" content="Draft a superteam from 26 seasons of XBS rosters. Pick 6 players, build the right chemistry, and see if you can run the table.">
+<meta property="og:url"         content="https://ravibhagw.github.io/xbs82/">
+<meta name="twitter:card"       content="summary">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0e1a;
+    color: #e0e6f0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #0d1220;
+    border-bottom: 2px solid #1e2d4a;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.05em; color: #e8c84a; }
+  header span { color: #5a7aa0; font-size: 0.9rem; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+  /* ── START SCREEN ── */
+  #start-screen {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 70vh; gap: 24px; text-align: center;
+  }
+  #start-screen h2 { font-size: 2.2rem; color: #e8c84a; line-height: 1.2; }
+  #start-screen p { color: #7a9bbf; max-width: 520px; line-height: 1.6; }
+
+  .btn {
+    background: #e8c84a; color: #0a0e1a; border: none;
+    padding: 14px 36px; font-size: 1rem; font-weight: 700;
+    border-radius: 6px; cursor: pointer; letter-spacing: 0.05em;
+    transition: background 0.15s;
+  }
+  .btn:hover { background: #f5d96b; }
+  .btn:disabled { background: #3a4a60; color: #5a6a80; cursor: not-allowed; }
+  .btn-sm {
+    padding: 8px 18px; font-size: 0.8rem;
+    background: #e8c84a; color: #0a0e1a; border: none;
+    font-weight: 700; border-radius: 5px; cursor: pointer;
+  }
+  .btn-sm:hover { background: #f5d96b; }
+  .btn-ghost {
+    background: transparent; color: #7a9bbf;
+    border: 1px solid #2a3d5a; padding: 8px 18px;
+    font-size: 0.8rem; border-radius: 5px; cursor: pointer;
+  }
+  .btn-ghost:hover { background: #1a2540; color: #e0e6f0; }
+
+  /* ── DRAFT SCREEN ── */
+  #draft-screen { display: none; }
+
+  .draft-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* Roster panel */
+  .roster-panel {
+    background: #0d1220; border: 1px solid #1e2d4a;
+    border-radius: 10px; padding: 20px;
+    position: sticky; top: 24px;
+  }
+  .roster-panel h3 {
+    font-size: 0.75rem; letter-spacing: 0.12em;
+    color: #5a7aa0; text-transform: uppercase; margin-bottom: 16px;
+  }
+  .roster-slot {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 6px; margin-bottom: 7px;
+    background: #0a0e1a; border: 1px solid #1a2540; min-height: 50px;
+  }
+  .roster-slot.filled { border-color: #2a4a2a; background: #0a110a; }
+  .slot-label {
+    font-size: 0.68rem; font-weight: 700; color: #5a7aa0;
+    text-transform: uppercase; width: 26px; flex-shrink: 0; text-align: center;
+  }
+  .slot-player .pname { font-size: 0.82rem; font-weight: 600; }
+  .slot-player .pmeta { font-size: 0.68rem; color: #5a7aa0; margin-top: 1px; }
+  .slot-empty { font-size: 0.78rem; color: #2a3d5a; font-style: italic; }
+
+  /* Pick panel */
+  .pick-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; margin-bottom: 20px; gap: 16px;
+  }
+  .pick-header h2 { font-size: 1.2rem; font-weight: 700; }
+  .pick-header h2 em { color: #e8c84a; font-style: normal; }
+
+  .team-badge {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+    background: #0d1220; border: 1px solid #2a4a6a;
+    border-radius: 8px; padding: 10px 16px; flex-shrink: 0;
+  }
+  .team-badge .team-name { font-size: 1.1rem; font-weight: 800; color: #e8c84a; }
+  .team-badge .season-tag { font-size: 0.78rem; color: #7a9bbf; font-weight: 600; }
+
+  .draft-progress { display: flex; gap: 6px; margin-bottom: 12px; }
+  .progress-pip {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #1a2540; border: 1px solid #2a3d5a;
+  }
+  .progress-pip.done   { background: #5dbb7a; border-color: #5dbb7a; }
+  .progress-pip.active { background: #e8c84a; border-color: #e8c84a; }
+
+  /* Player grid */
+  .player-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 12px;
+  }
+
+  .player-card {
+    background: #0d1220; border: 1px solid #1e2d4a;
+    border-radius: 10px; padding: 14px; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    position: relative;
+  }
+  .player-card:hover { border-color: #3a6aaa; background: #111827; transform: translateY(-2px); }
+  .player-card.unavailable {
+    opacity: 0.28; cursor: not-allowed; pointer-events: none;
+  }
+  .player-card.selected {
+    border-color: #e8c84a; background: #141a08;
+  }
+
+  .pos-badge {
+    display: inline-block; font-size: 0.62rem; font-weight: 700;
+    letter-spacing: 0.08em; padding: 2px 6px; border-radius: 4px;
+    margin-bottom: 7px; text-transform: uppercase;
+  }
+  .pos-center  { background: #1a3a6a; color: #6ab0ff; }
+  .pos-wing    { background: #1a4a2a; color: #5dbb7a; }
+  .pos-defense { background: #3a2a0a; color: #d4a020; }
+  .pos-goalie  { background: #3a0a1a; color: #e05070; }
+
+  .player-card .pname {
+    font-size: 0.95rem; font-weight: 700; margin-bottom: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .player-card .pgp { font-size: 0.68rem; color: #5a7aa0; margin-bottom: 9px; }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .stat-item { display: flex; flex-direction: column; }
+  .stat-label { font-size: 0.58rem; color: #4a6a90; text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat-value { font-size: 0.84rem; font-weight: 600; color: #c0d4e8; }
+  .stat-value.highlight { color: #e8c84a; }
+
+  /* Slot picker modal */
+  .slot-picker-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .slot-picker {
+    background: #0d1220; border: 1px solid #2a3d5a;
+    border-radius: 12px; padding: 24px; min-width: 280px;
+  }
+  .slot-picker h4 { font-size: 0.8rem; color: #5a7aa0; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .slot-picker .pname-large { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+  .slot-options { display: flex; flex-direction: column; gap: 8px; }
+  .slot-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: 7px;
+    background: #0a0e1a; border: 1px solid #2a3d5a;
+    cursor: pointer; transition: border-color 0.12s, background 0.12s;
+  }
+  .slot-option:hover { border-color: #e8c84a; background: #141a08; }
+  .slot-option .slot-opt-label { font-size: 0.75rem; font-weight: 700; color: #5a7aa0; width: 28px; }
+  .slot-option .slot-opt-name { font-size: 0.85rem; }
+  .slot-picker-cancel {
+    margin-top: 12px; width: 100%; padding: 8px;
+    background: transparent; border: 1px solid #2a3d5a;
+    color: #5a7aa0; border-radius: 6px; cursor: pointer;
+    font-size: 0.8rem;
+  }
+  .slot-picker-cancel:hover { background: #1a2540; color: #e0e6f0; }
+
+  /* ── RESULTS SCREEN ── */
+  #results-screen { display: none; }
+
+  .result-top {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;
+  }
+  .result-card {
+    background: #0d1220; border: 1px solid #1e2d4a;
+    border-radius: 10px; padding: 24px;
+  }
+  .result-card h3 {
+    font-size: 0.75rem; letter-spacing: 0.12em;
+    color: #5a7aa0; text-transform: uppercase; margin-bottom: 16px;
+  }
+
+  .record-display {
+    font-size: 3.5rem; font-weight: 800;
+    letter-spacing: -0.02em; line-height: 1; margin-bottom: 8px;
+  }
+  .record-display.perfect { color: #e8c84a; }
+  .record-display.great   { color: #5dbb7a; }
+  .record-display.good    { color: #6ab0ff; }
+  .record-display.poor    { color: #e05070; }
+  .result-sub { font-size: 0.85rem; color: #5a7aa0; margin-bottom: 4px; }
+
+  .sim-bar-wrap { margin-top: 16px; }
+  .sim-bar-label {
+    font-size: 0.75rem; color: #5a7aa0; margin-bottom: 4px;
+    display: flex; justify-content: space-between;
+  }
+  .sim-bar { height: 8px; background: #1a2540; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+  .sim-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+  .bar-wins    { background: #5dbb7a; }
+  .bar-winprob { background: #6ab0ff; }
+
+  /* Player detail cards */
+  .result-section-title {
+    font-size: 0.75rem; letter-spacing: 0.12em; color: #5a7aa0;
+    text-transform: uppercase; margin: 28px 0 14px;
+  }
+
+  .result-player-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .result-player-card {
+    background: #0d1220; border: 1px solid #1e2d4a; border-radius: 10px; padding: 16px;
+  }
+
+  .result-player-card .rpc-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .result-player-card .rpc-name { font-size: 1rem; font-weight: 700; }
+  .result-player-card .rpc-meta { font-size: 0.7rem; color: #5a7aa0; margin-top: 2px; }
+
+  .overall-badge {
+    display: flex; flex-direction: column; align-items: center;
+    background: #0a0e1a; border-radius: 8px; padding: 6px 10px; min-width: 52px;
+  }
+  .overall-badge .ovr-num {
+    font-size: 1.4rem; font-weight: 800; line-height: 1;
+  }
+  .overall-badge .ovr-label {
+    font-size: 0.55rem; color: #5a7aa0; text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .ovr-elite  { color: #e8c84a; }
+  .ovr-great  { color: #5dbb7a; }
+  .ovr-good   { color: #6ab0ff; }
+  .ovr-avg    { color: #c0d4e8; }
+  .ovr-poor   { color: #e05070; }
+
+  .role-tag {
+    display: inline-block; font-size: 0.65rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 4px; margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .role-Sniper         { background: #2a1a4a; color: #c080ff; }
+  .role-Playmaker      { background: #1a3a6a; color: #6ab0ff; }
+  .role-Two-Way        { background: #1a3a2a; color: #5dbb7a; }
+  .role-Power-Forward  { background: #3a2a0a; color: #d4a020; }
+  .role-Offensive      { background: #1a3a6a; color: #6ab0ff; }
+  .role-Physical       { background: #3a1a1a; color: #e05070; }
+  .role-Goalie         { background: #1a2540; color: #7a9bbf; }
+
+  .rpc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+
+  /* Team analysis */
+  .analysis-card {
+    background: #0d1220; border: 1px solid #1e2d4a; border-radius: 10px; padding: 24px;
+    margin-bottom: 24px;
+  }
+  .analysis-card h3 {
+    font-size: 0.75rem; letter-spacing: 0.12em; color: #5a7aa0;
+    text-transform: uppercase; margin-bottom: 16px;
+  }
+
+  .analysis-items { display: flex; flex-direction: column; gap: 10px; }
+
+  .analysis-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 10px 14px; border-radius: 7px; background: #0a0e1a;
+  }
+  .analysis-item.positive { border-left: 3px solid #5dbb7a; }
+  .analysis-item.negative { border-left: 3px solid #e05070; }
+  .analysis-item.neutral  { border-left: 3px solid #5a7aa0; }
+
+  .analysis-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .analysis-text { font-size: 0.85rem; line-height: 1.5; color: #c0d4e8; }
+  .analysis-text strong { color: #e0e6f0; }
+
+  .actions { display: flex; gap: 12px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>XBS82</h1>
+  <span>Build Your Superteam</span>
+</header>
+
+<div class="container">
+
+  <!-- START -->
+  <div id="start-screen">
+    <h2>Can you go 82-0?</h2>
+    <p>Draft a team of 6 players — one from each of 6 random team rosters. Pick wisely. Build the right mix of roles and you might just run the table.</p>
+    <button class="btn" onclick="startDraft()">Start Draft</button>
+  </div>
+
+  <!-- DRAFT -->
+  <div id="draft-screen">
+    <div class="draft-layout">
+
+      <div class="roster-panel">
+        <h3>Your Roster</h3>
+        <div id="roster-slots"></div>
+        <div style="margin-top:16px;display:flex;justify-content:center;">
+          <button class="btn" id="simulate-btn" style="display:none;" onclick="showResults()">Run Simulation</button>
+        </div>
+      </div>
+
+      <div class="pick-panel">
+        <div class="pick-header">
+          <div>
+            <div class="draft-progress" id="draft-progress"></div>
+            <h2>Round <em id="round-num">1</em> of 6 — Pick one player</h2>
+          </div>
+          <div class="team-badge">
+            <div>
+              <div class="team-name" id="pick-team-name">—</div>
+              <div class="season-tag" id="pick-season-tag">Season —</div>
+            </div>
+          </div>
+        </div>
+        <div class="player-grid" id="player-grid"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-screen">
+    <div class="result-top">
+      <div class="result-card">
+        <h3>Final Record</h3>
+        <div class="record-display" id="result-record">—</div>
+        <div class="result-sub" id="result-sub">—</div>
+        <div class="sim-bar-wrap">
+          <div class="sim-bar-label"><span>Wins</span><span id="bar-wins-pct">—</span></div>
+          <div class="sim-bar"><div class="sim-bar-fill bar-wins" id="bar-wins" style="width:0%"></div></div>
+          <div class="sim-bar-label"><span>Win probability per game</span><span id="bar-prob-pct">—</span></div>
+          <div class="sim-bar"><div class="sim-bar-fill bar-winprob" id="bar-prob" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="result-card">
+        <h3>Team Composition</h3>
+        <div class="analysis-items" id="comp-summary"></div>
+      </div>
+    </div>
+
+    <div class="result-section-title">Your Players</div>
+    <div class="result-player-grid" id="result-player-grid"></div>
+
+    <div class="analysis-card">
+      <h3>Team Analysis</h3>
+      <div class="analysis-items" id="team-analysis"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" onclick="startDraft()">Draft Again</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Slot picker modal -->
+<div class="slot-picker-overlay" id="slot-picker-overlay" style="display:none;">
+  <div class="slot-picker">
+    <h4>Assign to position</h4>
+    <div class="pname-large" id="slot-picker-name"></div>
+    <div class="slot-options" id="slot-options"></div>
+    <button class="slot-picker-cancel" onclick="closeSlotPicker()">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+
+const SLOTS = [
+  { slot: 'c',  label: 'Center',        short: 'C',  position: 'center'  },
+  { slot: 'w1', label: 'Left Wing',     short: 'LW', position: 'wing'    },
+  { slot: 'w2', label: 'Right Wing',    short: 'RW', position: 'wing'    },
+  { slot: 'd1', label: 'Left Defense',  short: 'LD', position: 'defense' },
+  { slot: 'd2', label: 'Right Defense', short: 'RD', position: 'defense' },
+  { slot: 'g',  label: 'Goalie',        short: 'G',  position: 'goalie'  },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+
+let allSeasons = {};
+let teamMappings = [];
+let draftRound = 0;        // 0-5
+let roster = {};           // slot -> player
+let usedTeamSeasons = new Set();
+let pendingPlayer = null;  // player waiting for slot assignment
+
+// ── LOAD DATA ─────────────────────────────────────────────────────────────────
+
+async function loadData() {
+  const seasons = Array.from({length: 26}, (_, i) => i + 23);
+  const [teamData, ...seasonData] = await Promise.all([
+    fetch('teamMappings.json').then(r => r.json()),
+    ...seasons.map(s => fetch(`stats/s${s}.json`).then(r => r.json()))
+  ]);
+  teamMappings = teamData;
+  seasons.forEach((s, i) => { allSeasons[s] = seasonData[i]; });
+}
+
+function getTeamInfo(id) {
+  return teamMappings.find(t => t.id === id) || { city: 'Unknown', name: 'Team' };
+}
+
+// ── DRAFT ─────────────────────────────────────────────────────────────────────
+
+function openSlots() {
+  return SLOTS.filter(s => !roster[s.slot]);
+}
+
+function slotsForPlayer(player) {
+  return openSlots().filter(s => s.position === player.position);
+}
+
+function pickRandomTeam() {
+  const seasons = Object.keys(allSeasons).map(Number);
+  for (let attempt = 0; attempt < 300; attempt++) {
+    const season = seasons[Math.floor(Math.random() * seasons.length)];
+    const teams = allSeasons[season];
+    const team = teams[Math.floor(Math.random() * teams.length)];
+    const key = `${season}-${team.teamId}`;
+    if (usedTeamSeasons.has(key)) continue;
+
+    // Make sure this team has at least one player who can fill an open slot
+    const hasUseful = team.players.some(p =>
+      openSlots().some(s => s.position === p.position) && p.gamesPlayed > 0
+    );
+    if (!hasUseful) continue;
+
+    usedTeamSeasons.add(key);
+    return { season, team };
+  }
+  // fallback — reuse a team if needed
+  const season = seasons[Math.floor(Math.random() * seasons.length)];
+  const team = allSeasons[season][0];
+  return { season, team };
+}
+
+function startDraft() {
+  draftRound = 0;
+  roster = {};
+  usedTeamSeasons = new Set();
+  pendingPlayer = null;
+
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('results-screen').style.display = 'none';
+  document.getElementById('draft-screen').style.display = 'block';
+  document.getElementById('simulate-btn').style.display = 'none';
+
+  renderRosterPanel();
+  renderRound();
+}
+
+function renderRound() {
+  document.getElementById('round-num').textContent = draftRound + 1;
+
+  // Progress pips
+  document.getElementById('draft-progress').innerHTML =
+    Array.from({length: 6}, (_, i) => {
+      const cls = i < draftRound ? 'done' : i === draftRound ? 'active' : '';
+      return `<div class="progress-pip ${cls}"></div>`;
+    }).join('');
+
+  const { season, team } = pickRandomTeam();
+  const teamInfo = getTeamInfo(team.teamId);
+
+  document.getElementById('pick-team-name').textContent = `${teamInfo.city} ${teamInfo.name}`;
+  document.getElementById('pick-season-tag').textContent = `Season ${season}`;
+
+  renderPlayerGrid(team.players, season);
+}
+
+function renderPlayerGrid(players, season) {
+  const grid = document.getElementById('player-grid');
+  grid.innerHTML = '';
+
+  // Sort: eligible first, then unavailable
+  const eligible = players.filter(p => slotsForPlayer(p).length > 0 && p.gamesPlayed > 0);
+  const unavailable = players.filter(p => slotsForPlayer(p).length === 0 || p.gamesPlayed === 0);
+
+  [...eligible, ...unavailable].forEach(p => {
+    const card = document.createElement('div');
+    const canPick = slotsForPlayer(p).length > 0 && p.gamesPlayed > 0;
+    card.className = 'player-card' + (canPick ? '' : ' unavailable');
+
+    const posCls = `pos-${p.position}`;
+    const posLabel = { center: 'C', wing: 'W', defense: 'D', goalie: 'G' }[p.position] || '?';
+
+    card.innerHTML = `
+      <span class="pos-badge ${posCls}">${posLabel}</span>
+      <div class="pname">${p.userName}</div>
+      <div class="pgp">${p.gamesPlayed} GP · Season ${season} · proj. 82 GP</div>
+      <div class="stat-grid">${buildStatDisplay(p)}</div>
+    `;
+
+    if (canPick) card.addEventListener('click', () => onPlayerClick(p));
+    grid.appendChild(card);
+  });
+}
+
+function onPlayerClick(player) {
+  const validSlots = slotsForPlayer(player);
+  if (validSlots.length === 1) {
+    assignPlayer(player, validSlots[0].slot);
+  } else {
+    openSlotPicker(player, validSlots);
+  }
+}
+
+function openSlotPicker(player, validSlots) {
+  pendingPlayer = player;
+  document.getElementById('slot-picker-name').textContent = player.userName;
+  document.getElementById('slot-options').innerHTML = validSlots.map(s => `
+    <div class="slot-option" onclick="assignPlayer(pendingPlayer, '${s.slot}')">
+      <span class="slot-opt-label">${s.short}</span>
+      <span class="slot-opt-name">${s.label}</span>
+    </div>
+  `).join('');
+  document.getElementById('slot-picker-overlay').style.display = 'flex';
+}
+
+function closeSlotPicker() {
+  pendingPlayer = null;
+  document.getElementById('slot-picker-overlay').style.display = 'none';
+}
+
+function assignPlayer(player, slot) {
+  closeSlotPicker();
+  roster[slot] = player;
+  draftRound++;
+  renderRosterPanel();
+
+  if (draftRound >= 6) {
+    document.getElementById('player-grid').innerHTML = '';
+    document.getElementById('pick-team-name').textContent = '—';
+    document.getElementById('pick-season-tag').textContent = '';
+    document.getElementById('round-num').textContent = '✓';
+    document.getElementById('draft-progress').innerHTML =
+      Array.from({length: 6}, () => `<div class="progress-pip done"></div>`).join('');
+    document.getElementById('simulate-btn').style.display = 'inline-block';
+  } else {
+    renderRound();
+  }
+}
+
+function renderRosterPanel() {
+  document.getElementById('roster-slots').innerHTML = SLOTS.map(({ slot, label, short }) => {
+    const p = roster[slot];
+    if (p) {
+      return `<div class="roster-slot filled">
+        <span class="slot-label">${short}</span>
+        <div class="slot-player">
+          <div class="pname">${p.userName}</div>
+          <div class="pmeta">S${p.season} · ${p.gamesPlayed} GP</div>
+        </div>
+      </div>`;
+    }
+    return `<div class="roster-slot">
+      <span class="slot-label">${short}</span>
+      <span class="slot-empty">${label}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── STAT DISPLAY ──────────────────────────────────────────────────────────────
+
+function buildStatDisplay(p) {
+  const fmt = (v, dec = 0) => v != null ? (dec ? Number(v).toFixed(dec) : Math.round(v)) : '—';
+
+  if (p.position === 'goalie') {
+    return [
+      stat('Proj Saves',  fmt(p.proj_saves)),
+      stat('SV%',         p.savePercentage.toFixed(3), true),
+      stat('GAA',         p.goalsAgainstAverage.toFixed(2)),
+      stat('Proj SO',     fmt(p.proj_shutouts)),
+    ].join('');
+  }
+
+  const items = [
+    stat('Proj G',   fmt(p.proj_goals),   p.position === 'wing'),
+    stat('Proj A',   fmt(p.proj_assists)),
+    stat('Proj PTS', fmt(p.proj_points),  true),
+    stat('Proj Hits',fmt(p.proj_hits)),
+  ];
+
+  if (p.position === 'center') {
+    const fo = p.faceoffsTaken > 0
+      ? (p.faceoffsWon / p.faceoffsTaken * 100).toFixed(1) + '%'
+      : '—';
+    items.push(stat('FO%', fo));
+  }
+
+  items.push(stat('+/-', (p.plusMinus >= 0 ? '+' : '') + p.plusMinus));
+  return items.join('');
+}
+
+function stat(label, value, highlight = false) {
+  return `<div class="stat-item">
+    <span class="stat-label">${label}</span>
+    <span class="stat-value${highlight ? ' highlight' : ''}">${value}</span>
+  </div>`;
+}
+
+// ── SIMULATION ────────────────────────────────────────────────────────────────
+
+const SCORE_CAP = 100;
+const SLOT_WEIGHTS = { g: 0.22, c: 0.20, w1: 0.13, w2: 0.13, d1: 0.16, d2: 0.16 };
+
+function baseWinProbability(r) {
+  let total = 0;
+  for (const [slot, weight] of Object.entries(SLOT_WEIGHTS)) {
+    const p = r[slot];
+    if (!p) return 0;
+    total += (Math.min(p.score, SCORE_CAP) / SCORE_CAP) * weight;
+  }
+  return total;
+}
+
+function compositionModifier(r) {
+  const fwdRoles = [r.c, r.w1, r.w2].filter(Boolean).map(p => p.role_calc);
+  const defRoles = [r.d1, r.d2].filter(Boolean).map(p => p.role_calc);
+
+  const hasSniper        = fwdRoles.includes('Sniper');
+  const hasPlaymaker     = fwdRoles.includes('Playmaker');
+  const hasTwoWayFwd     = fwdRoles.includes('Two-Way');
+  const hasPowerFwd      = fwdRoles.includes('Power Forward');
+  const allSnipers       = fwdRoles.every(r => r === 'Sniper');
+  const noPlaymaker      = !hasPlaymaker && !hasTwoWayFwd;
+  const hasOffensiveD    = defRoles.includes('Offensive');
+  const hasNonOffensiveD = defRoles.some(r => r !== 'Offensive');
+  const bothOffensiveD   = defRoles.every(r => r === 'Offensive');
+  const bothPhysicalD    = defRoles.every(r => r === 'Physical');
+
+  let mod = 0;
+  if (hasOffensiveD && hasNonOffensiveD) mod += 0.020;
+  if (hasSniper && hasPlaymaker)         mod += 0.020;
+  if (hasPowerFwd && !bothPhysicalD)     mod += 0.010;
+  if (allSnipers)                        mod -= 0.040;
+  if (noPlaymaker)                       mod -= 0.020;
+  if (bothOffensiveD)                    mod -= 0.030;
+  if (bothPhysicalD && !hasPowerFwd)     mod -= 0.015;
+  if (hasPowerFwd && bothPhysicalD)      mod -= 0.025;
+  return mod;
+}
+
+function randn() {
+  let u = 0, v = 0;
+  while (!u) u = Math.random();
+  while (!v) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function simulateSeason(r, games = 82) {
+  const base    = baseWinProbability(r);
+  const mod     = compositionModifier(r);
+  const winProb = Math.max(0, Math.min(1, base + mod));
+  let wins = 0;
+  for (let g = 0; g < games; g++) {
+    const gameProb = Math.max(0, Math.min(1, winProb + randn() * 0.05));
+    if (Math.random() < gameProb) wins++;
+  }
+  return { wins, losses: games - wins, winProb, base, mod, perfect: wins === games };
+}
+
+function ovrClass(score) {
+  if (score >= 90) return 'ovr-elite';
+  if (score >= 80) return 'ovr-great';
+  if (score >= 70) return 'ovr-good';
+  if (score >= 60) return 'ovr-avg';
+  return 'ovr-poor';
+}
+
+function roleClass(role) {
+  return 'role-' + (role || 'Two-Way').replace(/\s+/g, '-');
+}
+
+function buildResultPlayerCard(p, slotShort) {
+  const fmt = (v, dec = 0) => v != null ? (dec ? Number(v).toFixed(dec) : Math.round(v)) : '—';
+  const pm = v => (v >= 0 ? '+' : '') + v;
+  const score = Math.round(p.score);
+  const role = p.role_calc || 'Two-Way';
+
+  let statsHtml = '';
+  if (p.position === 'goalie') {
+    statsHtml = [
+      stat('SV%',      p.savePercentage.toFixed(3), true),
+      stat('GAA',      p.goalsAgainstAverage.toFixed(2)),
+      stat('Proj SO',  fmt(p.proj_shutouts)),
+      stat('Proj Sv',  fmt(p.proj_saves)),
+      stat('GP',       p.gamesPlayed),
+    ].join('');
+  } else {
+    const fo = p.faceoffsTaken > 0
+      ? (p.faceoffsWon / p.faceoffsTaken * 100).toFixed(1) + '%' : null;
+    statsHtml = [
+      stat('Proj G',   fmt(p.proj_goals), true),
+      stat('Proj A',   fmt(p.proj_assists)),
+      stat('Proj PTS', fmt(p.proj_points), true),
+      stat('Proj Hits',fmt(p.proj_hits)),
+      stat('+/-',      pm(p.plusMinus)),
+      stat('GP',       p.gamesPlayed),
+      ...(fo ? [stat('FO%', fo)] : []),
+      ...(p.position === 'defense' && p.defenseRating > 0 ? [stat('DR', p.defenseRating.toFixed(1))] : []),
+    ].join('');
+  }
+
+  return `<div class="result-player-card">
+    <div class="rpc-header">
+      <div>
+        <div class="rpc-name">${p.userName}</div>
+        <div class="rpc-meta">${slotShort} · S${p.season} · ${p.gamesPlayed} GP</div>
+      </div>
+    </div>
+    <span class="role-tag ${roleClass(role)}">${role}</span>
+    <div class="rpc-stats">${statsHtml}</div>
+  </div>`;
+}
+
+function buildAnalysis(result) {
+  const fwdRoles = [roster.c, roster.w1, roster.w2].filter(Boolean).map(p => p.role_calc);
+  const defRoles = [roster.d1, roster.d2].filter(Boolean).map(p => p.role_calc);
+
+  const hasSniper        = fwdRoles.includes('Sniper');
+  const hasPlaymaker     = fwdRoles.includes('Playmaker');
+  const hasTwoWayFwd     = fwdRoles.includes('Two-Way');
+  const hasPowerFwd      = fwdRoles.includes('Power Forward');
+  const allSnipers       = fwdRoles.every(r => r === 'Sniper');
+  const noPlaymaker      = !hasPlaymaker && !hasTwoWayFwd;
+  const hasOffensiveD    = defRoles.includes('Offensive');
+  const hasNonOffensiveD = defRoles.some(r => r !== 'Offensive');
+  const bothOffensiveD   = defRoles.every(r => r === 'Offensive');
+  const bothPhysicalD    = defRoles.every(r => r === 'Physical');
+
+  const scores = SLOTS.map(s => roster[s.slot]?.score ?? 0);
+  const avgScore = Math.round(scores.reduce((a,b) => a+b, 0) / scores.length);
+  const weakestSlot = SLOTS[scores.indexOf(Math.min(...scores))];
+  const weakestP = roster[weakestSlot.slot];
+
+  const items = [];
+
+  // Record framing
+  if (result.perfect) {
+    items.push({ type: 'positive', icon: '🏆', text: '<strong>Perfect team.</strong> You nailed the roster construction and the simulation gods were on your side.' });
+  } else if (result.wins >= 70) {
+    items.push({ type: 'positive', icon: '🔥', text: `<strong>${result.wins} wins</strong> is an elite season. You were close to perfection — just a few unlucky nights cost you.` });
+  } else if (result.wins >= 55) {
+    items.push({ type: 'neutral', icon: '📊', text: `<strong>${result.wins} wins</strong> is a solid playoff team, but not a 82-0 contender. There's room to build better.` });
+  } else {
+    items.push({ type: 'negative', icon: '📉', text: `<strong>${result.wins} wins</strong> — this roster had some serious gaps. Here's what went wrong:` });
+  }
+
+  // Composition feedback
+  if (hasSniper && hasPlaymaker) {
+    items.push({ type: 'positive', icon: '✅', text: '<strong>Good forward balance.</strong> Having both a Sniper and a Playmaker creates dynamic offensive chemistry — scorers need setup men.' });
+  }
+  if (hasOffensiveD && hasNonOffensiveD) {
+    items.push({ type: 'positive', icon: '✅', text: '<strong>Ideal defensive pairing.</strong> One offensive defenseman driving play, one protecting the backend — this is the blueprint.' });
+  }
+  if (hasSniper && hasPlaymaker && hasPowerFwd) {
+    items.push({ type: 'positive', icon: '✅', text: '<strong>Complete forward corps.</strong> Sniper + Playmaker + Power Forward gives you offense, puck movement, and physicality.' });
+  }
+
+  if (allSnipers) {
+    items.push({ type: 'negative', icon: '❌', text: '<strong>All Snipers up front.</strong> Nobody to move the puck or win board battles. Snipers dry up without playmakers feeding them.' });
+  } else if (noPlaymaker) {
+    items.push({ type: 'negative', icon: '⚠️', text: '<strong>No Playmaker in the lineup.</strong> Without someone setting up plays, your offense becomes predictable and one-dimensional.' });
+  }
+
+  if (bothOffensiveD) {
+    items.push({ type: 'negative', icon: '❌', text: '<strong>Both defensemen are Offensive.</strong> Nobody\'s minding the defensive zone — teams that cheat forward pay for it in their own end.' });
+  }
+  if (bothPhysicalD && !hasPowerFwd) {
+    items.push({ type: 'negative', icon: '⚠️', text: '<strong>Two Physical defensemen with no Power Forward.</strong> You\'re heavy but slow — no one is generating offense from the blue line or behind the net.' });
+  }
+  if (hasPowerFwd && bothPhysicalD) {
+    items.push({ type: 'negative', icon: '⚠️', text: '<strong>Power Forward + two Physical defensemen.</strong> Too much muscle, not enough skill. The power game works better when backed by offensive D.' });
+  }
+
+  // Weakest link — position-level, no names
+  if (weakestP && weakestP.score < 70) {
+    items.push({ type: 'negative', icon: '🔴', text: `<strong>Your ${weakestSlot.label} was a weak spot.</strong> A below-average contributor at ${weakestSlot.label} creates a liability the rest of the team has to compensate for.` });
+  }
+
+  // Team depth context
+  if (avgScore >= 85) {
+    items.push({ type: 'positive', icon: '⭐', text: `<strong>Elite depth across the board.</strong> Every slot on this roster is filled with a high-calibre contributor — there's no easy line to attack.` });
+  } else if (avgScore >= 75) {
+    items.push({ type: 'neutral', icon: '📋', text: `<strong>Good team, but not without gaps.</strong> The talent is there in places, but the roster needs more consistent production at every position to truly contend.` });
+  } else {
+    items.push({ type: 'negative', icon: '📋', text: `<strong>Too many soft spots in the lineup.</strong> A superteam needs elite contributors everywhere — not just at one or two positions.` });
+  }
+
+  // Win prob breakdown
+  const modSign = result.mod >= 0 ? '+' : '';
+  items.push({
+    type: 'neutral', icon: '🧮',
+    text: `<strong>Win probability breakdown:</strong> Base talent ${(result.base * 100).toFixed(1)}% · Composition modifier ${modSign}${(result.mod * 100).toFixed(1)}% · Net ${(result.winProb * 100).toFixed(1)}% per game.`
+  });
+
+  return items;
+}
+
+function buildCompSummary() {
+  const fwdRoles = [roster.c, roster.w1, roster.w2].filter(Boolean).map(p => p.role_calc);
+  const defRoles = [roster.d1, roster.d2].filter(Boolean).map(p => p.role_calc);
+
+  const lines = [
+    { label: 'Forwards', value: fwdRoles.join(', ') },
+    { label: 'Defense',  value: defRoles.join(', ') },
+    { label: 'Goalie',   value: roster.g?.role_calc || '—' },
+  ];
+
+  return lines.map(l => `
+    <div class="analysis-item neutral">
+      <span class="analysis-text"><strong>${l.label}:</strong> ${l.value}</span>
+    </div>`).join('');
+}
+
+function showResults() {
+  const result = simulateSeason(roster);
+
+  document.getElementById('draft-screen').style.display = 'none';
+  document.getElementById('results-screen').style.display = 'block';
+
+  // Record
+  const rec = document.getElementById('result-record');
+  rec.textContent = `${result.wins}–${result.losses}`;
+  rec.className = 'record-display ' +
+    (result.perfect ? 'perfect' : result.wins >= 70 ? 'great' : result.wins >= 55 ? 'good' : 'poor');
+
+  document.getElementById('result-sub').textContent = result.perfect
+    ? '🏒 UNDEFEATED. You built the perfect team.'
+    : result.wins >= 70 ? 'Elite season. Almost perfect.'
+    : result.wins >= 55 ? 'A solid playoff team.'
+    : 'Back to the draft board.';
+
+  // Bars
+  const winsPct = (result.wins / 82 * 100).toFixed(1);
+  const probPct = (result.winProb * 100).toFixed(1);
+  setTimeout(() => {
+    document.getElementById('bar-wins').style.width = winsPct + '%';
+    document.getElementById('bar-prob').style.width = probPct + '%';
+  }, 100);
+  document.getElementById('bar-wins-pct').textContent = `${result.wins}/82`;
+  document.getElementById('bar-prob-pct').textContent = `${probPct}%`;
+
+  // Composition summary
+  document.getElementById('comp-summary').innerHTML = buildCompSummary();
+
+  // Player cards
+  document.getElementById('result-player-grid').innerHTML = SLOTS.map(({ slot, short }) => {
+    const p = roster[slot];
+    return p ? buildResultPlayerCard(p, short) : '';
+  }).join('');
+
+  // Analysis
+  const analysisItems = buildAnalysis(result);
+  document.getElementById('team-analysis').innerHTML = analysisItems.map(item => `
+    <div class="analysis-item ${item.type}">
+      <span class="analysis-icon">${item.icon}</span>
+      <span class="analysis-text">${item.text}</span>
+    </div>
+  `).join('');
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadData().catch(console.error);
+</script>
+</body>
+</html>
