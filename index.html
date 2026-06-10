@@ -405,8 +405,11 @@
   </div>
 </div>
 
-<footer style="text-align:center;padding:24px 0 32px;font-size:0.72rem;color:#2a3d5a;">
-  <strong style="color:#3a5a7a;">Updates</strong> — Adjusted probabilities and game sim randomness
+<footer style="text-align:center;padding:24px 0 32px;font-size:0.72rem;color:#2a3d5a;line-height:1.8;">
+  <strong style="color:#3a5a7a;">Updates</strong><br>
+  1. Adjusted z-curve scoring — elite seasons can now score above 100 (up to 120) for historically dominant performances<br>
+  2. Improved role classification — elite scorers (top 20% pts/GP) are now correctly identified as Snipers or Playmakers<br>
+  3. Generational offensive performers (200+ projected points) now provide a pull-up effect that can offset other roster weaknesses
 </footer>
 
 <script>
@@ -647,7 +650,7 @@ function stat(label, value, highlight = false) {
 
 // ── SIMULATION ────────────────────────────────────────────────────────────────
 
-const SCORE_CAP = 100;
+const SCORE_CAP = 120;
 const SLOT_WEIGHTS = { g: 0.22, c: 0.20, w1: 0.13, w2: 0.13, d1: 0.16, d2: 0.16 };
 
 function baseWinProbability(r) {
@@ -684,6 +687,16 @@ function compositionModifier(r) {
   if (bothOffensiveD)                    mod -= 0.030;
   if (bothPhysicalD && !hasPowerFwd)     mod -= 0.015;
   if (hasPowerFwd && bothPhysicalD)      mod -= 0.025;
+
+  // Generational pull-up: elite scorers (200+ proj pts) carry so much offensive
+  // gravity that they partially compensate for roster weaknesses.
+  const allPlayers = Object.values(r).filter(Boolean);
+  for (const p of allPlayers) {
+    if ((p.position === 'center' || p.position === 'wing') && (p.proj_points ?? 0) >= 200) {
+      mod += 0.015; // each generational scorer adds ~1.5% per game
+    }
+  }
+
   return mod;
 }
 
@@ -791,6 +804,17 @@ function buildAnalysis(result) {
     items.push({ type: 'neutral', icon: '📊', text: `<strong>${result.wins} wins</strong> is a solid playoff team, but not a 82-0 contender. There's room to build better.` });
   } else {
     items.push({ type: 'negative', icon: '📉', text: `<strong>${result.wins} wins</strong> — this roster had some serious gaps. Here's what went wrong:` });
+  }
+
+  // Generational performer callout
+  const generationalPlayers = [roster.c, roster.w1, roster.w2].filter(p =>
+    p && (p.position === 'center' || p.position === 'wing') && (p.proj_points ?? 0) >= 200
+  );
+  for (const p of generationalPlayers) {
+    items.push({
+      type: 'positive', icon: '💫',
+      text: `<strong>${p.userName} is putting up a generational season</strong> — ${Math.round(p.proj_points)} projected points at an 82-game pace. That kind of offensive gravity elevates everyone around them and masks weaknesses elsewhere on the roster.`
+    });
   }
 
   // Composition feedback

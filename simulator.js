@@ -1,4 +1,4 @@
-const SCORE_CAP = 100;
+const SCORE_CAP = 120;
 
 // Slot weights — goalie and center touch every play
 const SLOT_WEIGHTS = {
