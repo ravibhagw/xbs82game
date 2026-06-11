@@ -311,6 +311,130 @@
   .analysis-text strong { color: #e0e6f0; }
 
   .actions { display: flex; gap: 12px; margin-top: 8px; }
+
+  /* Hidden on desktop, shown on mobile */
+  .result-share-card { display: none; }
+
+/* ── MOBILE ───────────────────────────────────────────────────────────────── */
+@media (max-width: 680px) {
+
+  /* Tighten global chrome */
+  header { padding: 12px 16px; }
+  header h1 { font-size: 1.2rem; }
+  .container { padding: 12px 12px; }
+
+  /* ── DRAFT SCREEN ── */
+
+  /* Stack roster strip above player grid */
+  .draft-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Roster panel becomes a compact horizontal strip */
+  .roster-panel {
+    position: static;
+    padding: 12px;
+  }
+  .roster-panel h3 { margin-bottom: 8px; }
+
+  /* Slots flow in a 2-column grid */
+  #roster-slots {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .roster-slot {
+    min-height: 38px;
+    padding: 6px 8px;
+    margin-bottom: 0;
+  }
+  .slot-player .pname { font-size: 0.75rem; }
+  .slot-player .pmeta { font-size: 0.62rem; }
+  .slot-empty { font-size: 0.7rem; }
+
+  /* Simulate button stays centered under the strip */
+  #roster-slots + div { margin-top: 10px; }
+
+  /* Pick header: stack team badge below the round text */
+  .pick-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .team-badge { align-items: flex-start; width: 100%; flex-direction: row; gap: 10px; padding: 8px 12px; }
+  .pick-header h2 { font-size: 1rem; }
+  .draft-progress { margin-bottom: 4px; }
+
+  /* Player cards: 2 per row */
+  .player-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .player-card { padding: 10px; }
+  .player-card .pname { font-size: 0.82rem; }
+  .player-card .pgp  { font-size: 0.62rem; }
+  .stat-grid { grid-template-columns: 1fr 1fr; gap: 4px; }
+  .stat-label { font-size: 0.55rem; }
+  .stat-value { font-size: 0.78rem; }
+
+  /* ── RESULTS SCREEN ── */
+
+  /* Show the mobile share card */
+  .result-share-card { display: block; }
+
+  /* Record + roster stacked, full width */
+  .result-top {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .result-card { padding: 16px; }
+  .record-display { font-size: 2.8rem; }
+
+  /* Roster summary: compact 2-col list embedded in the share card */
+  .result-share-card {
+    background: #0d1220;
+    border: 1px solid #1e2d4a;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .result-share-card h3 {
+    font-size: 0.75rem; letter-spacing: 0.12em;
+    color: #5a7aa0; text-transform: uppercase; margin-bottom: 12px;
+  }
+  .share-roster-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .share-roster-row {
+    display: flex; flex-direction: column;
+    background: #0a0e1a; border-radius: 6px;
+    padding: 7px 9px;
+  }
+  .share-roster-row .sr-slot  { font-size: 0.6rem; font-weight: 700; color: #5a7aa0; text-transform: uppercase; letter-spacing: 0.08em; }
+  .share-roster-row .sr-name  { font-size: 0.8rem; font-weight: 700; color: #e0e6f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .share-roster-row .sr-score { font-size: 0.68rem; color: #e8c84a; }
+  .share-roster-row .sr-meta  { font-size: 0.62rem; color: #4a6a90; }
+
+  /* Player detail cards: compact horizontal layout */
+  .result-player-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .result-player-card { padding: 12px; }
+  .rpc-stats { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+
+  /* Analysis card */
+  .analysis-card { padding: 16px; margin-bottom: 16px; }
+
+  /* Section title spacing */
+  .result-section-title { margin: 16px 0 10px; }
+}
 </style>
 </head>
 <body>
@@ -362,6 +486,7 @@
 
   <!-- RESULTS -->
   <div id="results-screen">
+    <!-- SCREEN 1: record + roster (shareable on mobile) -->
     <div class="result-top">
       <div class="result-card">
         <h3>Final Record</h3>
@@ -380,6 +505,13 @@
       </div>
     </div>
 
+    <!-- Mobile-only roster summary card (sits between record and analysis for easy screenshotting) -->
+    <div class="result-share-card" id="share-roster-card">
+      <h3>Your Roster</h3>
+      <div class="share-roster-grid" id="share-roster-grid"></div>
+    </div>
+
+    <!-- SCREEN 2: player detail + analysis -->
     <div class="result-section-title">Your Players</div>
     <div class="result-player-grid" id="result-player-grid"></div>
 
@@ -409,7 +541,8 @@
   <strong style="color:#3a5a7a;">Updates</strong><br>
   1. Adjusted z-curve scoring — elite seasons can now score above 100 (up to 120) for historically dominant performances<br>
   2. Improved role classification — elite scorers (top 20% pts/GP) are now correctly identified as Snipers or Playmakers<br>
-  3. Generational offensive performers (200+ projected points) now provide a pull-up effect that can offset other roster weaknesses
+  3. Generational offensive performers (200+ projected points) now provide a pull-up effect that can offset other roster weaknesses<br>
+  4. Reworked mobile layout — draft roster and player tiles now fit cleanly on small screens, and results show record + full roster on a single shareable screen
 </footer>
 
 <script>
@@ -909,6 +1042,18 @@ function showResults() {
 
   // Composition summary
   document.getElementById('comp-summary').innerHTML = buildCompSummary();
+
+  // Mobile share roster grid
+  document.getElementById('share-roster-grid').innerHTML = SLOTS.map(({ slot, short, label }) => {
+    const p = roster[slot];
+    if (!p) return '';
+    return `<div class="share-roster-row">
+      <span class="sr-slot">${label}</span>
+      <span class="sr-name">${p.userName}</span>
+      <span class="sr-score">${p.role_calc}</span>
+      <span class="sr-meta">S${p.season} &middot; ${p.gamesPlayed} GP</span>
+    </div>`;
+  }).join('');
 
   // Player cards
   document.getElementById('result-player-grid').innerHTML = SLOTS.map(({ slot, short }) => {
