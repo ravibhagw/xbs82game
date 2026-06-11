@@ -522,6 +522,7 @@
 
     <div class="actions">
       <button class="btn" onclick="startDraft()">Draft Again</button>
+      <button class="btn" id="rerun-btn" onclick="rerunSimulation()">Re-run Simulation</button>
     </div>
   </div>
 
@@ -542,7 +543,9 @@
   1. Adjusted z-curve scoring — elite seasons can now score above 100 (up to 120) for historically dominant performances<br>
   2. Improved role classification — elite scorers (top 20% pts/GP) are now correctly identified as Snipers or Playmakers<br>
   3. Generational offensive performers (200+ projected points) now provide a pull-up effect that can offset other roster weaknesses<br>
-  4. Reworked mobile layout — draft roster and player tiles now fit cleanly on small screens, and results show record + full roster on a single shareable screen
+  4. Reworked mobile layout — draft roster and player tiles now fit cleanly on small screens, and results show record + full roster on a single shareable screen<br>
+  5. Playstyle roles (Sniper, Playmaker, Two-Way, etc.) now visible on player cards during the draft and in the roster panel<br>
+  6. Re-run Simulation button added to results screen — roll the dice up to 3 times on the same roster before drafting again
 </footer>
 
 <script>
@@ -565,6 +568,8 @@ let draftRound = 0;        // 0-5
 let roster = {};           // slot -> player
 let usedTeamSeasons = new Set();
 let pendingPlayer = null;  // player waiting for slot assignment
+let rerunCount = 0;
+const RERUN_MAX = 3;
 
 // ── LOAD DATA ─────────────────────────────────────────────────────────────────
 
@@ -621,6 +626,7 @@ function startDraft() {
   roster = {};
   usedTeamSeasons = new Set();
   pendingPlayer = null;
+  rerunCount = 0;
 
   document.getElementById('start-screen').style.display = 'none';
   document.getElementById('results-screen').style.display = 'none';
@@ -666,10 +672,12 @@ function renderPlayerGrid(players, season) {
     const posCls = `pos-${p.position}`;
     const posLabel = { center: 'C', wing: 'W', defense: 'D', goalie: 'G' }[p.position] || '?';
 
+    const role = p.role_calc || 'Two-Way';
     card.innerHTML = `
       <span class="pos-badge ${posCls}">${posLabel}</span>
       <div class="pname">${p.userName}</div>
       <div class="pgp">${p.gamesPlayed} GP · Season ${season} · proj. 82 GP</div>
+      <span class="role-tag ${roleClass(role)}">${role}</span>
       <div class="stat-grid">${buildStatDisplay(p)}</div>
     `;
 
@@ -727,11 +735,12 @@ function renderRosterPanel() {
   document.getElementById('roster-slots').innerHTML = SLOTS.map(({ slot, label, short }) => {
     const p = roster[slot];
     if (p) {
+      const role = p.role_calc || 'Two-Way';
       return `<div class="roster-slot filled">
         <span class="slot-label">${short}</span>
         <div class="slot-player">
           <div class="pname">${p.userName}</div>
-          <div class="pmeta">S${p.season} · ${p.gamesPlayed} GP</div>
+          <div class="pmeta">S${p.season} · ${p.gamesPlayed} GP · <span class="role-tag ${roleClass(role)}" style="padding:1px 5px;font-size:0.6rem;">${role}</span></div>
         </div>
       </div>`;
     }
@@ -1012,6 +1021,25 @@ function buildCompSummary() {
     </div>`).join('');
 }
 
+function rerunSimulation() {
+  if (rerunCount >= RERUN_MAX) return;
+  rerunCount++;
+  showResults();
+}
+
+function updateRerunBtn() {
+  const btn = document.getElementById('rerun-btn');
+  if (!btn) return;
+  const remaining = RERUN_MAX - rerunCount;
+  if (remaining <= 0) {
+    btn.disabled = true;
+    btn.textContent = 'Re-run Simulation (0 left)';
+  } else {
+    btn.disabled = false;
+    btn.textContent = `Re-run Simulation (${remaining} left)`;
+  }
+}
+
 function showResults() {
   const result = simulateSeason(roster);
 
@@ -1071,6 +1099,7 @@ function showResults() {
   `).join('');
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateRerunBtn();
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
