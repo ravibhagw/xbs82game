@@ -67,6 +67,16 @@ function compositionModifier(roster) {
     if (bothPhysicalD && !hasPowerFwd)       modifier -= 0.015; // no offensive punch from D
     if (hasPowerFwd && bothPhysicalD)        modifier -= 0.025; // too much muscle, not enough skill
 
+    // Bad-player drag: escalating penalty for each player below the league p25 threshold.
+    // 1 bad player: -2%, 2: -6%, 3: -12%, 4+: -20% total.
+    const DRAG_THRESHOLD = 63;
+    const DRAG_STEPS = [0.020, 0.040, 0.060, 0.080];
+    const allSlotPlayers = Object.values(roster).filter(Boolean);
+    const badCount = allSlotPlayers.filter(p => p.score < DRAG_THRESHOLD).length;
+    for (let i = 0; i < badCount; i++) {
+        modifier -= DRAG_STEPS[Math.min(i, DRAG_STEPS.length - 1)];
+    }
+
     return modifier;
 }
 

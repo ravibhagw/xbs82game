@@ -545,7 +545,8 @@
   3. Generational offensive performers (200+ projected points) now provide a pull-up effect that can offset other roster weaknesses<br>
   4. Reworked mobile layout — draft roster and player tiles now fit cleanly on small screens, and results show record + full roster on a single shareable screen<br>
   5. Playstyle roles (Sniper, Playmaker, Two-Way, etc.) now visible on player cards during the draft and in the roster panel<br>
-  6. Re-run Simulation button added to results screen — roll the dice up to 3 times on the same roster before drafting again
+  6. Re-run Simulation button added to results screen — roll the dice up to 3 times on the same roster before drafting again<br>
+  7. Bad-player drag penalty added to the sim engine — weak players (bottom 25% of the league) now cost escalating win probability: -2% for one, -6% for two, -12% for three, -20% for four or more
 </footer>
 
 <script>
@@ -839,6 +840,15 @@ function compositionModifier(r) {
     }
   }
 
+  // Bad-player drag: escalating penalty for each player below the league p25 threshold.
+  // 1 bad player: -2%, 2: -6%, 3: -12%, 4+: -20% total.
+  const DRAG_THRESHOLD = 63;
+  const DRAG_STEPS = [0.020, 0.040, 0.060, 0.080];
+  const badCount = allPlayers.filter(p => p.score < DRAG_THRESHOLD).length;
+  for (let i = 0; i < badCount; i++) {
+    mod -= DRAG_STEPS[Math.min(i, DRAG_STEPS.length - 1)];
+  }
+
   return mod;
 }
 
@@ -993,6 +1003,15 @@ function buildAnalysis(result) {
     items.push({ type: 'neutral', icon: '📋', text: `<strong>Good team, but not without gaps.</strong> The talent is there in places, but the roster needs more consistent production at every position to truly contend.` });
   } else {
     items.push({ type: 'negative', icon: '📋', text: `<strong>Too many soft spots in the lineup.</strong> A superteam needs elite contributors everywhere — not just at one or two positions.` });
+  }
+
+  // Bad-player drag feedback
+  const dragPlayers = SLOTS.map(s => roster[s.slot]).filter(p => p && p.score < 63);
+  if (dragPlayers.length === 1) {
+    items.push({ type: 'negative', icon: '⚠️', text: `<strong>${dragPlayers[0].userName} is a weak link.</strong> One below-average player is manageable, but they're costing you wins every night.` });
+  } else if (dragPlayers.length >= 2) {
+    const names = dragPlayers.map(p => p.userName).join(', ');
+    items.push({ type: 'negative', icon: '❌', text: `<strong>Too many weak players: ${names}.</strong> Stacking below-average talent compounds — each one costs more than the last.` });
   }
 
   // Win prob breakdown
